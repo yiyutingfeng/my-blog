@@ -101,6 +101,9 @@ lob.llvm.[unique_id].[hostname]_[pid]
 <!-- endtab -->
 {% endtabs %}
 
+### LOB文件大小
+单个lob文件最大1TB
+
 ### lob触发compaction的两种机制
 1. update操作，lob文件中无效lob比例 >= `lob_delete_factor`
 2. lob小文件数量 >= `lob_compaction_small_files_cnt`
