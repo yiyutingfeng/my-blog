@@ -4,15 +4,27 @@ date: 2023-08-07 17:59:02
 tags:
 ---
 
+
 # Doris数据模型
 
 Doris 数据模型上目前分为三类:
-- AGGREGATE
-- UNIQUE
-- DUPLICATE
-在 Aggregate、Unique 和 Duplicate 三种数据模型中。底层的数据存储，是按照各自建表语句中，AGGREGATE KEY、UNIQUE KEY 和 DUPLICATE KEY 中指定的列（**不支持任意列，必须为前n列**）进行排序存储的
+- AGGREGATE（聚合模型）
+- UNIQUE（唯一主键模型）
+- DUPLICATE（明细模型）
 
 <!-- more -->
+
+{% note info %}
+**说明**
+1. 在 Aggregate、Unique 和 Duplicate 三种数据模型中。底层的数据存储，是按照各自建表语句中，AGGREGATE KEY、UNIQUE KEY 和 DUPLICATE KEY 中指定的列（**不支持任意列，必须为前n列**）进行排序存储的
+2. 三种模型都涉及前缀索引，即在排序的基础上，实现的一种根据给定前缀列，快速查询数据的索引方式，属于Doris内建的智能索引之一。
+3. 在查询过滤时使用AGGREGATE KEY、UNIQUE KEY 和 DUPLICATE KEY 中的指定列时，可以提高查询效率。
+{% endnote %}
+
+**适用场景**：
+- AGGREGATE 模型适合有固定模式的报表类查询场景和多维分析业务
+- UNIQUE 模型适用于有主键唯一性约束需求的某些多维分析业务
+- DUPLICATE 模型适用于既没有主键，也没有聚合需求的场景
 
 ## AGGREGATE模型
 
@@ -104,7 +116,6 @@ AGGREGATE KEY相同时，新旧记录进行聚合，目前有以下聚合方式�
 原始数据在导入过程中，会根据表结构中的Key进行分组，相同Key的Value会根据表中定义的AggregationType进行聚合
 
 由于Doris采用的是MVCC（Multi-version Cocurrent Control，多版本并发控制）机制进行的并发控制，所以每一次新的导入都是一个新的版本
-
 #### Compaction阶段
 在不断导入新数据后，虽然每个批次的数据都在导入阶段完成了聚合，但不同版本之间的数据仍存在相同key但value没有聚合的情况，这时候就需要Compaction对不同版本的数据进行合并，对数据进行二次聚合
 
@@ -112,6 +123,16 @@ AGGREGATE KEY相同时，新旧记录进行聚合，目前有以下聚合方式�
 由于Compaction是异步的，在用户查询的数据仍存在多个版本时，为保证查询结果一致，会获取所有版本的数据，再做一次聚合，将聚合后的结果展示给用户。
 
 经过聚合，Doris 中最终只会存储聚合后的数据。换句话说，即明细数据会丢失，用户不能够再查询到聚合前的明细数据了。经过聚合，Doris 中最终只会存储聚合后的数据。换句话说，即明细数据会丢失，用户不能够再查询到聚合前的明细数据了。
+
+### 时序图
+1. insert与compact阶段
+以某一批次加载中`insert`阶段与`compaction`阶段的聚合操作,以聚合方法为`SUM`为例,时序图如下：
+![](/images/Doris的数据模型/insert_and_compaction_agg.png)
+
+2. 查询阶段
+![](/images/Doris的数据模型/select_agg.png)
+
+聚合方法在工厂类`AggregateFunctionSimpleFactory`中注册，使用时通过`AggregateFunctionSimpleFactory`获取对应聚合方法类的指针`AggregateFunctionPtr`执行聚合操作
 
 ### 适用场景
 AGGREGATE模型可以提前聚合数据, 极大地降低聚合查询时所需扫描的数据量和查询的计算量，非常适合有固定模式的报表类查询场景和多维分析业务。
@@ -214,21 +235,135 @@ SELECT COUNT(*) FROM table;
 
 另一种方式，就是 **将如上的 `count` 列的聚合类型改为 REPLACE，且依然值恒为 1**。那么 `select sum(count) from table;` 和 `select count(*) from table;` 的结果将是一致的。并且这种方式，没有导入重复行的限制。
 
-## UNIQUE模型
 
-UNIQUE KEY 相同时，新记录覆盖旧记录。在1.2版本之前，UNIQUE KEY 实现上和 AGGREGATE KEY 的 REPLACE 聚合方法一样，二者本质上相同，自1.2版本UNIQUE KEY引入了merge on write实现，该实现有更好的聚合查询性能。适用于有更新需求的分析业务。
+{% note danger %}
+**注意**
+**以下模型未整理完**
+{% endnote %}
+
+## UNIQUE模型
+在1.2版本之前，该模型本质上是聚合模型的一个特例，也是一种简化的表结构表示方式。实现上和 AGGREGATE 模型 的 REPLACE 聚合方法一样，二者本质上相同，由于实现方式是读时合并（merge on read)，因此在一些聚合查询上性能不佳，自1.2版本 UNIQUE 模型引入新的实现方式，写时合并（merge on write），通过在写入时做一些额外的工作，实现了最优的查询性能，该实现有更好的聚合查询性能。默认情况下写时合并是关闭的。
+
+### 读时合并（与聚合模型相同的实现方式）
+
+| ColumnName    | Type         | IsKey | Comment      |
+| ------------- | ------------ | ----- | ------------ |
+| user_id       | BIGINT       | Yes   | 用户id       |
+| username      | VARCHAR(50)  | Yes   | 用户昵称     |
+| city          | VARCHAR(20)  | No    | 用户所在城市 |
+| age           | SMALLINT     | No    | 用户年龄     |
+| sex           | TINYINT      | No    | 用户性别     |
+| phone         | LARGEINT     | No    | 用户电话     |
+| address       | VARCHAR(500) | No    | 用户住址     |
+| register_time | DATETIME     | No    | 用户注册时间 |
+
+这是一个典型的用户基础信息表。这类数据没有聚合需求，只需保证主键唯一性。（这里的主键为 user_id + username）。那么我们的建表语句如下：
 
 ```sql
-CREATE TABLE sales_order
+CREATE TABLE IF NOT EXISTS example_db.example_tbl
 (
-    orderid     BIGINT,
-    status      TINYINT,
-    username    VARCHAR(32),
-    amount      BIGINT DEFAULT '0'
+    `user_id` LARGEINT NOT NULL COMMENT "用户id",
+    `username` VARCHAR(50) NOT NULL COMMENT "用户昵称",
+    `city` VARCHAR(20) COMMENT "用户所在城市",
+    `age` SMALLINT COMMENT "用户年龄",
+    `sex` TINYINT COMMENT "用户性别",
+    `phone` LARGEINT COMMENT "用户电话",
+    `address` VARCHAR(500) COMMENT "用户地址",
+    `register_time` DATETIME COMMENT "用户注册时间"
 )
-UNIQUE KEY(orderid)
-DISTRIBUTED BY HASH(orderid) BUCKETS 10;
+UNIQUE KEY(`user_id`, `username`)
+DISTRIBUTED BY HASH(`user_id`) BUCKETS 1
+PROPERTIES (
+"replication_allocation" = "tag.location.default: 1"
+);
 ```
+
+而这个表结构，完全同等于以下使用聚合模型描述的表结构：
+
+| ColumnName    | Type         | AggregationType | Comment      |
+| ------------- | ------------ | --------------- | ------------ |
+| user_id       | BIGINT       |                 | 用户id       |
+| username      | VARCHAR(50)  |                 | 用户昵称     |
+| city          | VARCHAR(20)  | REPLACE         | 用户所在城市 |
+| age           | SMALLINT     | REPLACE         | 用户年龄     |
+| sex           | TINYINT      | REPLACE         | 用户性别     |
+| phone         | LARGEINT     | REPLACE         | 用户电话     |
+| address       | VARCHAR(500) | REPLACE         | 用户住址     |
+| register_time | DATETIME     | REPLACE         | 用户注册时间 |
+
+及建表语句：
+
+```sql
+CREATE TABLE IF NOT EXISTS example_db.example_tbl
+(
+    `user_id` LARGEINT NOT NULL COMMENT "用户id",
+    `username` VARCHAR(50) NOT NULL COMMENT "用户昵称",
+    `city` VARCHAR(20) REPLACE COMMENT "用户所在城市",
+    `age` SMALLINT REPLACE COMMENT "用户年龄",
+    `sex` TINYINT REPLACE COMMENT "用户性别",
+    `phone` LARGEINT REPLACE COMMENT "用户电话",
+    `address` VARCHAR(500) REPLACE COMMENT "用户地址",
+    `register_time` DATETIME REPLACE COMMENT "用户注册时间"
+)
+AGGREGATE KEY(`user_id`, `username`)
+DISTRIBUTED BY HASH(`user_id`) BUCKETS 1
+PROPERTIES (
+"replication_allocation" = "tag.location.default: 1"
+);
+```
+
+### 写时合并
+
+Unqiue模型的写时合并实现，与聚合模型就是完全不同的两种模型了，查询性能更接近于duplicate模型，在有主键约束需求的场景上相比聚合模型有较大的查询性能优势，尤其是在聚合查询以及需要用索引过滤大量数据的查询中。
+
+在 1.2.0 版本中，作为一个新的feature，写时合并默认关闭，用户可以通过添加下面的property来开启
+
+```
+"enable_unique_key_merge_on_write" = "true"
+```
+
+仍然以上面的表为例，建表语句为
+
+```sql
+CREATE TABLE IF NOT EXISTS example_db.example_tbl
+(
+    `user_id` LARGEINT NOT NULL COMMENT "用户id",
+    `username` VARCHAR(50) NOT NULL COMMENT "用户昵称",
+    `city` VARCHAR(20) COMMENT "用户所在城市",
+    `age` SMALLINT COMMENT "用户年龄",
+    `sex` TINYINT COMMENT "用户性别",
+    `phone` LARGEINT COMMENT "用户电话",
+    `address` VARCHAR(500) COMMENT "用户地址",
+    `register_time` DATETIME COMMENT "用户注册时间"
+)
+UNIQUE KEY(`user_id`, `username`)
+DISTRIBUTED BY HASH(`user_id`) BUCKETS 1
+PROPERTIES (
+"replication_allocation" = "tag.location.default: 1",
+"enable_unique_key_merge_on_write" = "true"
+);
+```
+
+使用这种建表语句建出来的表结构，与聚合模型就完全不同了：
+
+| ColumnName    | Type         | AggregationType | Comment      |
+| ------------- | ------------ | --------------- | ------------ |
+| user_id       | BIGINT       |                 | 用户id       |
+| username      | VARCHAR(50)  |                 | 用户昵称     |
+| city          | VARCHAR(20)  | NONE            | 用户所在城市 |
+| age           | SMALLINT     | NONE            | 用户年龄     |
+| sex           | TINYINT      | NONE            | 用户性别     |
+| phone         | LARGEINT     | NONE            | 用户电话     |
+| address       | VARCHAR(500) | NONE            | 用户住址     |
+| register_time | DATETIME     | NONE            | 用户注册时间 |
+
+在开启了写时合并选项的Unique表上，数据在导入阶段就会去将被覆盖和被更新的数据进行标记删除，同时将新的数据写入新的文件。在查询的时候，所有被标记删除的数据都会在文件级别被过滤掉，读取出来的数据就都是最新的数据，消除掉了读时合并中的数据聚合过程，并且能够在很多情况下支持多种谓词的下推。因此在许多场景都能带来比较大的性能提升，尤其是在有聚合查询的情况下。
+
+{% note waring %}
+1. 新的Merge-on-write实现默认关闭，且只能在建表时通过指定property的方式打开。
+2. 旧的Merge-on-read的实现无法无缝升级到新版本的实现（数据组织方式完全不同），如果需要改为使用写时合并的实现版本，需要手动执行`insert into unique-mow-table select * from source table`.
+3. 在Unique模型上独有的delete sign 和 sequence col，在写时合并的新版实现中仍可以正常使用，用法没有变化。
+{% endnote %}
 
 ## DUPLICATE模型
 
