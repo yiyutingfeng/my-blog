@@ -19,6 +19,7 @@ Doris 数据模型上目前分为三类:
 1. 在 Aggregate、Unique 和 Duplicate 三种数据模型中。底层的数据存储，是按照各自建表语句中，AGGREGATE KEY、UNIQUE KEY 和 DUPLICATE KEY 中指定的列（**不支持任意列，必须为前n列**）进行排序存储的
 2. 三种模型都涉及前缀索引，即在排序的基础上，实现的一种根据给定前缀列，快速查询数据的索引方式，属于Doris内建的智能索引之一。
 3. 在查询过滤时使用AGGREGATE KEY、UNIQUE KEY 和 DUPLICATE KEY 中的指定列时，可以提高查询效率。
+4. 数据模型在建表时就已经确定，且无法修改
 {% endnote %}
 
 **适用场景**：
@@ -28,7 +29,7 @@ Doris 数据模型上目前分为三类:
 
 ## AGGREGATE模型
 
-### 介绍
+### 数据聚合
 假设有如下数据表模式：
 
 | ColumnName      | Type        | AggregationType | Comment              |
@@ -235,12 +236,6 @@ SELECT COUNT(*) FROM table;
 
 另一种方式，就是 **将如上的 `count` 列的聚合类型改为 REPLACE，且依然值恒为 1**。那么 `select sum(count) from table;` 和 `select count(*) from table;` 的结果将是一致的。并且这种方式，没有导入重复行的限制。
 
-
-{% note danger %}
-**注意**
-**以下模型未整理完**
-{% endnote %}
-
 ## UNIQUE模型
 在1.2版本之前，该模型本质上是聚合模型的一个特例，也是一种简化的表结构表示方式。实现上和 AGGREGATE 模型 的 REPLACE 聚合方法一样，二者本质上相同，由于实现方式是读时合并（merge on read)，因此在一些聚合查询上性能不佳，自1.2版本 UNIQUE 模型引入新的实现方式，写时合并（merge on write），通过在写入时做一些额外的工作，实现了最优的查询性能，该实现有更好的聚合查询性能。默认情况下写时合并是关闭的。
 
@@ -314,9 +309,9 @@ PROPERTIES (
 
 ### 写时合并
 
-Unqiue模型的写时合并实现，与聚合模型就是完全不同的两种模型了，查询性能更接近于duplicate模型，在有主键约束需求的场景上相比聚合模型有较大的查询性能优势，尤其是在聚合查询以及需要用索引过滤大量数据的查询中。
+Unqiue 模型的写时合并实现，与聚合模型是完全不同的两种模型了，查询性能更接近于 Duplicate 模型，在有主键约束需求的场景上相比聚合模型有较大的查询性能优势，尤其是在聚合查询以及需要用索引过滤大量数据的查询中。
 
-在 1.2.0 版本中，作为一个新的feature，写时合并默认关闭，用户可以通过添加下面的property来开启
+写时合并默认关闭，用户可以通过添加下面的property来开启
 
 ```
 "enable_unique_key_merge_on_write" = "true"
@@ -359,28 +354,93 @@ PROPERTIES (
 
 在开启了写时合并选项的Unique表上，数据在导入阶段就会去将被覆盖和被更新的数据进行标记删除，同时将新的数据写入新的文件。在查询的时候，所有被标记删除的数据都会在文件级别被过滤掉，读取出来的数据就都是最新的数据，消除掉了读时合并中的数据聚合过程，并且能够在很多情况下支持多种谓词的下推。因此在许多场景都能带来比较大的性能提升，尤其是在有聚合查询的情况下。
 
-{% note waring %}
-1. 新的Merge-on-write实现默认关闭，且只能在建表时通过指定property的方式打开。
-2. 旧的Merge-on-read的实现无法无缝升级到新版本的实现（数据组织方式完全不同），如果需要改为使用写时合并的实现版本，需要手动执行`insert into unique-mow-table select * from source table`.
-3. 在Unique模型上独有的delete sign 和 sequence col，在写时合并的新版实现中仍可以正常使用，用法没有变化。
+{% note warning %}
+1. 新的`Merge-on-write`实现默认关闭，且只能在建表时通过指定`property`的方式打开。
+2. 旧的`Merge-on-read`的实现无法无缝升级到新版本的实现（数据组织方式完全不同），如果需要改为使用写时合并的实现版本，需要手动执行`insert into unique-mow-table select * from source table`.
+3. 在Unique模型上独有的`delete sign`和`sequence col`，在写时合并的新版实现中仍可以正常使用，用法没有变化。
 {% endnote %}
+
+### Unique模型的写时合并实现
+
+Unique模型的写时合并实现没有聚合模型的局限性，还是以刚才的数据为例，写时合并为每次导入的rowset增加了对应的delete bitmap，来标记哪些数据被覆盖。第一批数据导入后状态如下
+
+**batch 1**
+
+| user_id | date       | cost | delete bit |
+| ------- | ---------- | ---- | ---------- |
+| 10001   | 2017-11-20 | 50   | false      |
+| 10002   | 2017-11-21 | 39   | false      |
+
+当第二批数据导入完成后，第一批数据中重复的行就会被标记为已删除，此时两批数据状态如下
+
+**batch 1**
+
+| user_id | date       | cost | delete bit |
+| ------- | ---------- | ---- | ---------- |
+| 10001   | 2017-11-20 | 50   | **true**   |
+| 10002   | 2017-11-21 | 39   | false      |
+
+**batch 2**
+
+| user_id | date       | cost | delete bit |
+| ------- | ---------- | ---- | ---------- |
+| 10001   | 2017-11-20 | 1    | false      |
+| 10001   | 2017-11-21 | 5    | false      |
+| 10003   | 2017-11-22 | 22   | false      |
+
+在查询时，所有在delete bitmap中被标记删除的数据都不会读出来，因此也无需进行做任何数据聚合，上述数据中有效的行数为4行，查询出的结果也应该是4行，也就可以采取开销最小的方式来获取结果，即前面提到的“仅扫描某一列数据，获得 count 值”的方式。
+
+据官方文档介绍，在测试环境中，count(*) 查询在 Unique 模型的写时合并实现上的性能，相比聚合模型有10倍以上的提升。
+
+### 写时合并时序图
+
+![](/images/Doris的数据模型/merge_on_write_unique.png)
+
+### 缺点
+1. 无法利用 ROLLUP 等预聚合带来的查询优势。对于聚合查询有较高性能需求的用户，推荐使用自1.2版本加入的写时合并实现。
+2. Unique 模型仅支持整行更新，如果用户既需要唯一主键约束，又需要更新部分列（例如将多张源表导入到一张 doris 表的情形），则可以考虑使用 Aggregate 模型，同时将非主键列的聚合类型设置为 REPLACE_IF_NOT_NULL。
 
 ## DUPLICATE模型
 
-只指定排序列，相同的行不会合并。适用于数据无需提前聚合的分析业务。等价于有序表
+Duplicate 数据模型用于满足在某些多维分析场景下，数据既没有主键，也没有聚合需求的场景。
+
+这种数据模型区别于 Aggregate 和 Unique 模型。数据完全按照导入文件中的数据进行存储，不会有任何聚合。即使两行数据完全相同，也都会保留。 而在建表语句中指定的 DUPLICATE KEY，只是用来指明底层数据按照那些列进行排序。
+
+| ColumnName | Type          | SortKey | Comment      |
+| ---------- | ------------- | ------- | ------------ |
+| timestamp  | DATETIME      | Yes     | 日志时间     |
+| type       | INT           | Yes     | 日志类型     |
+| error_code | INT           | Yes     | 错误码       |
+| error_msg  | VARCHAR(1024) | No      | 错误详细信息 |
+| op_id      | BIGINT        | No      | 负责人id     |
+| op_time    | DATETIME      | No      | 处理时间     |
+
+建表语句如下：
 
 ```sql
-CREATE TABLE session_data
+CREATE TABLE IF NOT EXISTS example_db.example_tbl
 (
-    visitorid   SMALLINT,
-    sessionid   BIGINT,
-    visittime   DATETIME,
-    city        CHAR(20),
-    province    CHAR(20),
-    ip          varchar(32),
-    brower      CHAR(20),
-    url         VARCHAR(1024)
+    `timestamp` DATETIME NOT NULL COMMENT "日志时间",
+    `type` INT NOT NULL COMMENT "日志类型",
+    `error_code` INT COMMENT "错误码",
+    `error_msg` VARCHAR(1024) COMMENT "错误详细信息",
+    `op_id` BIGINT COMMENT "负责人id",
+    `op_time` DATETIME COMMENT "处理时间"
 )
-DUPLICATE KEY(visitorid, sessionid)
-DISTRIBUTED BY HASH(sessionid, visitorid) BUCKETS 10;
+DUPLICATE KEY(`timestamp`, `type`, `error_code`)
+DISTRIBUTED BY HASH(`type`) BUCKETS 1
+PROPERTIES (
+"replication_allocation" = "tag.location.default: 1"
+);
 ```
+
+这种数据模型区别于 Aggregate 和 Unique 模型。数据完全按照导入文件中的数据进行存储，不会有任何聚合。即使两行数据完全相同，也都会保留。 而在建表语句中指定的 DUPLICATE KEY，只是用来指明底层数据按照那些列进行排序。
+
+### 时序图
+与[Aggregate模型一样，仅没有聚合操作](#时序图)
+
+### 适用场景
+适用于既没有聚合需求，又没有主键唯一性约束的原始数据的存储
+
+### 缺点
+无法利用预聚合的特性
