@@ -5,11 +5,10 @@ tags:
     - lob
     - clob
     - blob
+categories:
+description:
+    - CirroData LOB类型
 ---
-
-CirroDate LOB类型说明
-
-<!-- more -->
 
 ### LOB类型
 

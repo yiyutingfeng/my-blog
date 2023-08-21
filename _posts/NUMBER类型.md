@@ -2,6 +2,9 @@
 title: NUMBER类型
 date: 2022-07-11 11:24:55
 tags:
+categories:
+description:
+   - CirroData NUMBER类型
 ---
 
 CirroData NUMBER类型说明

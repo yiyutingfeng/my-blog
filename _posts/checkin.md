@@ -2,11 +2,10 @@
 title: checkin
 date: 2023-02-14 17:10:38
 tags:
+categories:
+description:
+    CirroData 3.0版 跑checkin
 ---
-
-3.0 checkin
-
-<!-- more -->
 
 [checkin autotest](http://172.16.12.45/afe/#tab_id=view_job&object_id=145411)
 

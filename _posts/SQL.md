@@ -2,11 +2,10 @@
 title: SQL
 date: 2022-07-08 15:19:37
 tags:
+categories:
+description:
+    - CirroData 的一些常用或可能会用到的SQL
 ---
-
-一些常用或可能会用到的SQL
-
-<!-- more -->
 
 ### 删除非空数据库
 

@@ -2,11 +2,12 @@
 title: 如何通过hadoop访问s3存储桶
 date: 2023-05-30 10:14:12
 tags:
+    - hadoop
+    - s3
+categories:
+description:
+    - 如何在不改变 hadoop 原有配置的情况下访问s3存储桶
 ---
-
-在不改变hadoop原配置的情况下,通过指定配置文件和设置环境变量进行访问s3存储桶
-
-<!-- more -->
 
 ## 在s3a配置文件所在目录下创建脚本文件并添加可执行权限
 ```

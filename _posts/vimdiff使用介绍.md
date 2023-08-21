@@ -3,11 +3,10 @@ title: vimdiff使用介绍
 date: 2023-05-21 09:47:58
 tags:
     - vimdiff
+categories:
+description:
+    - vimdiff 工具使用方法
 ---
-
-在日常的程序开发中，我们经常需要比较两个文件或不同版本之间的差异。而 `vimdiff` 就是一个非常好用的命令行工具，可以方便地进行文件比较和差异解决。接下来，本文将介绍 `vimdiff` 的基本使用方法。
-
-<!-- more -->
 
 ### 打开 `vimdiff`
 
