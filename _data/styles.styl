@@ -1,0 +1,43 @@
+/* 全局布局美化代码 */
+
+/* 设置整个页面的背景样式 */
+body {
+  background-image: url(/images/background.jpg);  /* 设置页面背景图片 */
+  background-repeat: no-repeat;                   /* 不重复背景图片 */
+  background-attachment: fixed;                   /* 固定背景图片，不随页面滚动 */
+  background-position: center;                    /* 背景图片居中显示 */
+}
+
+/* 文章块样式 */
+.post-block {
+  background-color: rgba(255, 255, 255, 1);       /* 文章块背景色为白色 */
+  margin-bottom: 24px;                            /* 底部留出空白 */
+  border-radius: 30px;                            /* 圆角半径为 30px */
+  box-shadow:
+    8px 7px 2px 0 rgba(0, 0, 0, 0.12),            /* 添加阴影效果，参数分别为水平偏移、垂直偏移、模糊半径、阴影扩散程度 */
+    7px 4px 1px -2px rgba(0, 0, 0, 0.06),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+}
+
+/* 主体区域内部样式 */
+.main-inner {
+  background-color: rgba(255, 255, 255, 0);       /* 主体区域透明背景 */
+}
+
+/* 限制代码块和链接的长度，避免样式问题 */
+.post-block code {
+  word-break: break-all;
+}
+.post-block a {
+  word-break: break-all;
+}
+
+/* 链接样式 */
+.post-body p a {
+  color: #0593d3;                                 /* 将链接文本设置为蓝色 */
+  border-bottom: none;                            /* 去掉默认下划线 */
+  &:hover {
+    color: #0477ab;                               /* 鼠标划过时文字颜色加深 */
+    text-decoration: underline;                   /* 显示下划线 */
+  }
+}
