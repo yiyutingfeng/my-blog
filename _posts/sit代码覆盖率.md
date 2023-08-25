@@ -4,6 +4,7 @@ date: 2023-04-28 14:34:07
 tags:
     - 覆盖率
 categories:
+    - CirroData
 description:
     - 通过 sit 测试生成覆盖率报告
 ---

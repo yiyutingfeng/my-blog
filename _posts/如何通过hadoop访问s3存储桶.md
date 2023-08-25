@@ -5,6 +5,7 @@ tags:
     - hadoop
     - s3
 categories:
+    - s3
 description:
     - 如何在不改变 hadoop 原有配置的情况下访问s3存储桶
 ---

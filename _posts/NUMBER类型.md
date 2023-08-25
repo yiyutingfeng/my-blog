@@ -1,15 +1,11 @@
 ---
-title: NUMBER类型
+title: CirroData NUMBER 数据类型
 date: 2022-07-11 11:24:55
 tags:
 categories:
 description:
-   - CirroData NUMBER类型
+   - CirroData NUMBER 数据类型介绍
 ---
-
-CirroData NUMBER类型说明
-
-<!-- more -->
 
 ## number可表示范围
    (-1E252, -1E-260], 0, [1E-260, 1E252)

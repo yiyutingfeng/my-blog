@@ -2,7 +2,10 @@
 title: kv组件部署脚本
 date: 2023-05-01 14:39:27
 tags:
+    - kv
 categories:
+    - CirroData
+    - kv
 description:
     - 使用脚本部署 KV 组件
 ---

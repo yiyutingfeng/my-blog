@@ -4,6 +4,7 @@ date: 2023-05-21 09:47:58
 tags:
     - vimdiff
 categories:
+    - vimdiff
 description:
     - vimdiff 工具使用方法
 ---

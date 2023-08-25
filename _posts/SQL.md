@@ -1,8 +1,11 @@
 ---
-title: SQL
+title: CirroData 实用SQL
 date: 2022-07-08 15:19:37
 tags:
+    - sql
+    - CirroData
 categories:
+    - CirroData
 description:
     - CirroData 的一些常用或可能会用到的SQL
 ---

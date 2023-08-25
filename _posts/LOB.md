@@ -1,11 +1,12 @@
 ---
-title: lob
+title: CirroData LOB 数据类型
 date: 2022-07-05 14:28:32
 tags:
-    - lob
-    - clob
-    - blob
+    - LOB
+    - CLOB
+    - BLOB
 categories:
+    - CirroData
 description:
     - CirroData LOB类型
 ---
@@ -31,9 +32,11 @@ description:
 {% endnote %}
 
 LOB_LOCATOR存储位置
+
 1. 正常情况:
 `/xcloud_name/cluster_name.data/db_name/schema_name/table_id/session_id/LOB/lob_file_name`
-1. LLVM计算:
+
+2. LLVM计算:
 `/xcloud_name/cluster_name.data/SYS.TEMP/db_name/schema_name/session_id/LOB/lob_file_name`
 
 {% note warning %}
@@ -49,21 +52,29 @@ static const int32_t LOB_INLINE_SIZE = 4 * 1024;
 ### LOB文件命名
 
 #### 普通文件
+
 - 索引文件
+
 ``` bash
 lob.[trans_id].[unique_id].[hostname]_[pid].index
 ```
+
 - 数据文件
+
 ``` bash
 lob.[trans_id].[unique_id].[hostname]_[pid]
 ```
 
 #### llvm计算文件
+
 - 索引文件
+
 ``` bash
 lob.llvm.[unique_id].[hostname]_[pid].index
 ```
+
 - 数据文件
+
 ``` bash
 lob.llvm.[unique_id].[hostname]_[pid]
 ```
@@ -74,6 +85,7 @@ lob.llvm.[unique_id].[hostname]_[pid]
 {% endnote %}
 
 ### 相关配置参数
+
 {% tabs lob, 1 %}
 <!-- tab 3.0 -->
 | 参数名 | 说明 | 参数类型 | 默认值 | 参数值范围 |
@@ -101,9 +113,11 @@ lob.llvm.[unique_id].[hostname]_[pid]
 {% endtabs %}
 
 ### LOB文件大小
+
 单个lob文件最大1TB
 
 ### lob触发compaction的两种机制
+
 1. update操作，lob文件中无效lob比例 >= `lob_delete_factor`
 2. lob小文件数量 >= `lob_compaction_small_files_cnt`
 
@@ -120,17 +134,23 @@ lob为null，其成员函数几乎都不可使用，强制使用会访问空指�
 {% endnote %}
 
 ### export clob
+
 支持导出真实数据，如果数据太长，依然用`<CLOB>`替代真实数据,长度限制查看配置,导出和导入用的同一套配置参数`csv_file_with_clob_max_buffer_size`和`csv_file_max_buffer_size`
 
 ### blob加载多媒体文件
+
 通过csv文件进行加载，csv文件中写入多媒体文件的路径
+
 示例：
-/home/gaoyuanfeng/3.0/blob_insert.csv该csv文件内容如下
+存在`/home/gaoyuanfeng/3.0/blob_insert.csv`该路径的csv文件，文件内容如下
+
 ``` csv
 "/home/gaoyuanfeng/3.0/picture2.png"
 "/home/gaoyuanfeng/3.0/picture2.png"
 ```
+
 inset使用`/*+LOB_FROM_EXTFILE*/`hit进行加载
+
 ``` sql
 CREATE TABLE BLOB_TEST(picture BLOB);
 INSERT INTO /*+LOB_FROM_EXTFILE*/ BLOB_TEST '/home/gaoyuanfeng/3.0/blob_insert.csv' SEPARATOR ';' DELIMITER '"';
