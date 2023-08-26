@@ -11,12 +11,14 @@ description:
 ---
 
 ## 在s3a配置文件所在目录下创建脚本文件并添加可执行权限
+
 ```
 touch set_s3a_classpath.sh
 chomod +x set_s3a_classpath.sh
 ```
 
 ## 复制以下内容到`set_s3a_classpath.sh`脚本文件中
+
 ``` shell
 #!/bin/bash
 set -euo pipefail
@@ -103,11 +105,13 @@ fi
 ```
 
 ## 执行脚本,以设置环境变量
+
 ``` bash
 . set_s3a_classpath.sh
 ```
 
 ## 访问s3存储桶
+
 ``` bash
 hadoop fs -ls s3a://<bucket_name>/
 ```
@@ -115,9 +119,7 @@ hadoop fs -ls s3a://<bucket_name>/
 如果您想屏蔽Hadoop中的日志，可以通过更改Hadoop的日志级别来实现。以下是一些步骤，可以帮助您完成这个任务：
 
 1. 找到Hadoop的日志配置文件，`log4j.properties`
-
 2. 打开日志配置文件，找到与S3A相关的日志记录器。在这个文件中，您可能会看到一些类似`log4j.logger.org.apache.hadoop.fs.s3a.S3AFileSystem=DEBUG`的行，这些行指定了日志级别。
-
 3. 将日志级别调整为您想要的级别。常见的级别包括：
    - `OFF`：完全关闭日志记录。
    - `FATAL`：仅记录严重错误。
@@ -127,11 +129,10 @@ hadoop fs -ls s3a://<bucket_name>/
    - `DEBUG`：记录详细的调试信息。
 
    如果您只想屏蔽S3A的日志，可以将对应的日志记录器级别设置为`OFF`。
-
 4. 保存并关闭日志配置文件。
 
-
 以下是一个示例的log4j.properties文件，用于访问S3并屏蔽日志：
+
 ``` conf
 # Global logging configuration
 log4j.rootLogger=ERROR, console

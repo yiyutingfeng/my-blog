@@ -13,45 +13,54 @@ description:
 ## 脚本使用方法
 
 ### 必要操作
+
 1. 复制kv安装包到脚本所在目录
 2. 修改脚本中的`ARBITER_RPC_PORT`,`CARRIER_RPC_PORT`,`IP`三个变量
 
 ### 部署并启动kv
+
 ``` bash
 ./kv_tools.sh deploy
 ```
 
 ### 启动kv
+
 ``` bash
 ./kv_tools.sh start
 ```
 
 ### 停止kv
+
 ``` bash
 ./kv_tools.sh stop
 ```
 
 ### 清理kv
+
 ``` bash
 ./kv_tools.sh clean
 ```
 
 ### 重启kv
+
 ``` bash
 ./kv_tools.sh restart
 ```
 
 ### 更新kv(自动停止和清理旧版kv,自动识别新包,重新部署新kv)
+
 ``` bash
 ./kv_tools.sh update
 ```
 
 ### 查看kv状态
+
 ``` bash
 ./kv_tools.sh status
 ```
 
 ## `kv_tools.sh`脚本内容
+
 ``` bash
 #!/bin/bash
 # 支持单节点或多节点配置kv组件

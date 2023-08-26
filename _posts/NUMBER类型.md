@@ -37,6 +37,7 @@ const IndexType XCNumber::S_ZERO_INDEX_BASE = 128;
 ```
 
 #### 正数
+
    索引值 = `S_POSITIVE_INDEX_BASE` + 整数部分单元格的个数
    例如: 数值1234567.1234567存储位number类型，索引值 = 192 + 2 = 194
 
@@ -46,6 +47,7 @@ const IndexType XCNumber::S_ZERO_INDEX_BASE = 128;
    索引值取值范围[128, 255]
 
 #### 负数
+
    索引值 = `S_NEGATIVE_INDEX_BASE` - 整数部分单元格的个数
    例如: 数值-1234567.1234567存储为number类型，索引值 = 63 - 2 = 61
 
@@ -55,6 +57,7 @@ const IndexType XCNumber::S_ZERO_INDEX_BASE = 128;
    索引值取值范围[0, 127]
 
 #### 0
+
    索引值 = `S_ZERO_INDEX_BASE` = 128
 
    > 注意: 0的索引值是128，但索引值为128的数不一定是0，例如1E-260的索引值也是128
@@ -71,6 +74,7 @@ const TailType XCNumber::S_NEGATIVE_BASE = 10001;
 以1234567.1234567举例
 
 #### 数值划分
+
 1. 整数部分: 每4位占一个单元，从低位开始划分，从高位开始存储
    例如: 1234567  共7位，占2个单元，123 占数值部分第1个单元，4567占第2个单元
 2. 小数部分: 每4位占一个单元，从高位开始划分，从高位开始存储，低位不满4字节末尾填充0补齐
@@ -81,6 +85,7 @@ const TailType XCNumber::S_NEGATIVE_BASE = 10001;
 | --- | --- | --- | --- |
 
 #### 数值存储
+
 1. **正数**: 默认11个单元初始化为`S_POSITIVE_TAIL`,存储内容为原值单元划分后的值加上`S_POSITIVE_BASE`，即每个单元初始化为0，每个单元的值为：原值 + 1
 
    例如: 1234567.1234567

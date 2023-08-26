@@ -34,13 +34,20 @@ description:
 LOB_LOCATOR存储位置
 
 1. 正常情况:
-`/xcloud_name/cluster_name.data/db_name/schema_name/table_id/session_id/LOB/lob_file_name`
+
+```
+/xcloud_name/cluster_name.data/db_name/schema_name/table_id/session_id/LOB/lob_file_name
+```
 
 2. LLVM计算:
-`/xcloud_name/cluster_name.data/SYS.TEMP/db_name/schema_name/session_id/LOB/lob_file_name`
+
+```
+/xcloud_name/cluster_name.data/SYS.TEMP/db_name/schema_name/session_id/LOB/lob_file_name
+```
 
 {% note warning %}
 #### 注意
+
 Writer会根据数据长度设置Lob存储类型
 读取lob数据时，需要根据存储类型区分读取方式，LOB_INLINE直接从lob中读取，LOB_LOCATOR使用Reader读取
 {% endnote %}
@@ -81,6 +88,7 @@ lob.llvm.[unique_id].[hostname]_[pid]
 
 {% note info %}
 #### 说明
+
 索引文件和数据文件成对出现，索引文件的文件名仅比数据文件的文件名多`.index`后缀
 {% endnote %}
 
@@ -123,6 +131,7 @@ lob.llvm.[unique_id].[hostname]_[pid]
 
 {% note info %}
 #### 说明
+
 1. update操作才会产生无效数据，delete不会
 2. LOCATOR存储的lob,若update后的数据长度小于4KB,是不会进行compaction的，此时lob属于INLINE存储，原lob仅增加delete标记
 {% endnote %}
@@ -130,6 +139,7 @@ lob.llvm.[unique_id].[hostname]_[pid]
 
 {% note danger %}
 #### 使用为NULL的LOB
+
 lob为null，其成员函数几乎都不可使用，强制使用会访问空指针（`m_lobInfo = null`），导致崩溃，可使用`XCLob::IsNull()`方法判断lob是否为null
 {% endnote %}
 
