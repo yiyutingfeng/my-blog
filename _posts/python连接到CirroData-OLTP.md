@@ -9,41 +9,51 @@ description:
 ---
 
 
-## 安装CirroData-OLTP
+### 运行CirroData-OLTP
 
-安装并启动CirroData-OLTP
+确保CirroData-OLTP已经安装并在你的系统上运行。
 
-## 安装MySQL驱动程序`mysql-connector-python`
+### 安装MySQL驱动程序 `mysql-connector-python`
 
-- 前提
+确保你的Python版本符合要求，并且可以在有网络环境（python最低要求为3.11版本）或无网络环境（python最低要求为2.7版本）下安装MySQL驱动程序。
 
-python 需要2.7.5及以上版本
+#### 在有网络环境下安装：
 
-- 有网络环境
-
-执行以下命令进行安装
-
-``` bash
-pip install mysql-connector-python
+```bash
+pip3 install mysql-connector-python
 ```
 
-- 无网络环境
+这将自动下载并安装最新版本的MySQL驱动程序。
 
-1. 下载离线安装包[mysql-connector-python-8.0.18.tar.gz](https://downloads.mysql.com/archives/get/p/29/file/mysql-connector-python-8.0.18.tar.gz)
+#### 在无网络环境下安装：
 
-2. 执行以下命令进行安装
+1. 下载离线安装包 [mysql-connector-python-8.0.18.tar.gz](https://downloads.mysql.com/archives/get/p/29/file/mysql-connector-python-8.0.18.tar.gz) 到你的系统中。
 
-``` bash
+2. 使用以下命令解压缩文件：
+
+```bash
 tar xvfz mysql-connector-python-8.0.18.tar.gz
+```
+
+3. 进入解压后的目录：
+
+```bash
 cd mysql-connector-python-8.0.18
+```
+
+4. 执行以下命令进行安装，可以指定安装路径：
+
+```bash
 python setup.py install --prefix=/path/to/your/directory
 ```
 
-`--prefix=/path/to/your/directory`为可选项,`/path/to/your/directory`是你希望安装mysql-connector-python的路径，根据实际情况进行调整
+`--prefix=/path/to/your/directory` 是可选项，用于指定你希望安装mysql-connector-python的路径。
 
-## python连接CirroData-OLTP示例:
+### Python连接CirroData-OLTP示例
 
-``` py
+以下是Python脚本示例，用于连接到CirroData-OLTP服务器并执行查询：
+
+```python
 #!/usr/bin/env python
 # coding=utf-8
 
@@ -79,6 +89,9 @@ for row in results:
 cursor.close()
 conn.close()
 ```
+
+确保按照脚本中的注释更改连接参数以匹配你的CirroData-OLTP配置。
+通过执行上述脚本，你可以连接到CirroData-OLTP服务器并执行查询。这个示例中的查询是 `SHOW DATABASES;`，你可以根据你的需要更改查询。
 
 执行脚本
 
